@@ -1,0 +1,29 @@
+---
+title: "Untitled"
+author: "Le Cai"
+date: "2024-09-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+     
+```
+
+
+
+```{r}
+library(tidyverse)
+library(readr)
+data <- read_csv("C:/Users/Rose/Desktop/data.csv")
+
+ggplot(data,aes(x=salary))+geom_histogram()
+qqnorm(data$salary)
+qqline(data$salary)
+
+plot(data$work_year,data$salary)
+m=lm(data$work_year~data$salary)
+yint=m$coefficients[1]
+xval=m$coefficients[2]
+abline(a=yint,b=xval)
+```
