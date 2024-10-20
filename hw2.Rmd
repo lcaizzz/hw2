@@ -1,7 +1,7 @@
 ---
-title: "Untitled"
+title: "hw2"
 author: "Le Cai"
-date: "2024-09-20"
+date: "2024-10-20"
 output: html_document
 ---
 
@@ -16,20 +16,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(shiny)
-library(glue)
-library(bslib)
+#library(glue)
+#library(bslib)
 library(DT)
-library(tmap)
-#install.packages("tmap")
-library(spData)
-library(sf)
 library(ggplot2)
+#library(plotly)
 data <- read_csv("https://uwmadison.box.com/shared/static/z6aapq6uw92xg4a31f96w9wd08fonv1j.csv")
-
-
 ```
 
-Add a slider function to choose year
 
 ```{r}
 scatterplot <- function(data, selected_) {
@@ -42,7 +36,9 @@ scatterplot <- function(data, selected_) {
   scale_alpha(range = c(0.1, 0.5), guide = "none")+
   scale_size(range = c(0.1, 5), guide = "none")+ # change dots' size
     labs(
-    title = "Scatter Plot on Worlds Best Restaurants with Gradient Color Based on Rank",
+    title = "Brush area on the map to get the restaurants' details",
+    x = "Longitude",
+    y = "Latitude",
     color = "Rank",
     alpha = "Rank",
     size = "Rank"
@@ -51,20 +47,23 @@ scatterplot <- function(data, selected_) {
 
 filter_df <- function(df, selected_) {
   filter(df, selected_) |>
-    select(lng, lat, country,restaurant,year, rank)
+    select(country, restaurant, year, rank)
 }
 
 ui <- fluidPage(
   h3("Worlds Best Restaurants"),
+  #sliderInput("year", "Year", min = min(data$year), max = max(data$year), c(2002, 2023), sep = ""), ## i have tried using slider input but doesn't work, I wonder it seems that the reactive result in slider cannot be used in scatterpplotting
   plotOutput("map", brush = "plot_brush", height = 600),
   DTOutput("table")
   #theme = bs_theme(bootswatch = "minty")
 )
 
 server <- function(input, output) {
+  #data_new <- reactive({data %>%filter((year >= input$year[1]) & (year <= input$year[2]))})
   selected <- reactiveVal(rep(TRUE, nrow(data)))
   observeEvent(input$plot_brush, {
     selected(brushedPoints(data, input$plot_brush, allRows = TRUE)$selected_)
+  #observeEvent(input$plot_brush, {brushed_points <- brushedPoints(data, input$plot_brush, xvar = "lng", yvar = "lat")selected(brushed_points$selected_)
   })
   
   output$map <- renderPlot(scatterplot(data, selected()))
@@ -77,70 +76,4 @@ shinyApp(ui, server)
 ```
 
 
-
-```{r}
-plot(world%>%st_geometry())
-color_palette <- colorRampPalette(c("darkblue","lightblue"))
-point_colors <- color_palette(length(unique(data$rank)))[data$rank]
-points(data$lng, data$lat, col = point_colors, pch = 19, cex = 0.7)
-color_legend <- color_palette(100)  # Gradient colors for the legend
-breaks <- pretty(data$rank, n = 10)
-legend("bottomright", legend = breaks, fill = color_palette(100)[as.numeric(cut(breaks, breaks = 100))], 
-       title = "Rank", cex = 0.8, bty = "n", border = "white", xpd = TRUE)
-
-```
-
-
-```{r}
-world_coordinates <- map_data("world") 
-  
-# create world map using ggplot() function 
-ggplot() + 
-  
-# geom_map() function takes world coordinates  
-# as input to plot world map 
-  geom_map( 
-    data = world_coordinates, map = world_coordinates, 
-    aes(long, lat, map_id = region) 
-  )
-
-```
-
-```{r}
-#world <- st_as_sf(world)
-data_sf <- st_as_sf(data, coords = c("lng", "lat"), crs = 4326)
-ggplot() +
-  geom_sf(data = world, fill = "grey", color = "white") +
-  # Overlay points with a gradient color based on 'rank'
-  geom_sf(data = data_sf, aes(color = rank, alpha = rank, size = rank), shape = 19) +
-  # Apply a color gradient scale to the points based on 'rank'
-  scale_color_gradient(low = "darkblue", high = "lightblue") +  # Gradient for rank
-  scale_alpha(range = c(0.1, 0.5), guide = "none") +  # Set transparency (alpha)
-  scale_size(range = c(0.1, 0.9), guide = "none") +  # Set point sizes based on 'rank'
-  coord_sf() +
-  theme_void() +
-  labs(
-    title = "Scatter Plot on World Map with Gradient Color Based on Rank",
-    color = "Rank",
-    alpha = "Rank",
-    size = "Rank"
-  )
-```
-
-
-```{r}
-
-```
-
-```{r}
-ggplot(data,aes(x=salary))+geom_histogram()
-qqnorm(data$salary)
-qqline(data$salary)
-
-plot(data$work_year,data$salary)
-m=lm(data$work_year~data$salary)
-yint=m$coefficients[1]
-xval=m$coefficients[2]
-abline(a=yint,b=xval)
-```
 
