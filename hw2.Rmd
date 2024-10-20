@@ -20,56 +20,47 @@ library(shiny)
 #library(bslib)
 library(DT)
 library(ggplot2)
-#library(plotly)
+library(plotly)
 data <- read_csv("https://uwmadison.box.com/shared/static/z6aapq6uw92xg4a31f96w9wd08fonv1j.csv")
 ```
 
 
 ```{r}
-scatterplot <- function(data, selected_) {
-  data|>
-    mutate(selected = selected_)|>
-    ggplot() +
-    #geom_map(data = map_data("world") , map = map_data("world"), aes(long, lat, map_id = region))+ # i think the app doesn't allow putting map since there's no variable in mapping that is a changing variable from brush
-    #geom_sf(data=world, fill = "grey", color = "white") +
-    geom_point(aes(lng, lat, color = rank, alpha = as.numeric(selected), size = as.numeric(selected))) +
-  scale_alpha(range = c(0.1, 0.5), guide = "none")+
-  scale_size(range = c(0.1, 5), guide = "none")+ # change dots' size
-    labs(
-    title = "Brush area on the map to get the restaurants' details",
-    x = "Longitude",
-    y = "Latitude",
-    color = "Rank",
-    alpha = "Rank",
-    size = "Rank"
-  )
-    }
+ scatterplot <- function(df) {
+   p <- ggplot(mapping = aes(lng, lat)) +
+     geom_point(data = df %>% filter(selected), color='red', size = 2, alpha = 1) +
+     geom_point(data = df %>% filter(!selected),  size = .5, alpha = .1)
+   ggplotly(p, tooltip = "Title") %>%
+     style(hoveron = "fill")
+ }
 
-filter_df <- function(df, selected_) {
-  filter(df, selected_) |>
-    select(country, restaurant, year, rank)
-}
-
-ui <- fluidPage(
-  h3("Worlds Best Restaurants"),
-  #sliderInput("year", "Year", min = min(data$year), max = max(data$year), c(2002, 2023), sep = ""), ## i have tried using slider input but doesn't work, I wonder it seems that the reactive result in slider cannot be used in scatterpplotting
-  plotOutput("map", brush = "plot_brush", height = 600),
-  DTOutput("table")
-  #theme = bs_theme(bootswatch = "minty")
-)
-
-server <- function(input, output) {
-  #data_new <- reactive({data %>%filter((year >= input$year[1]) & (year <= input$year[2]))})
-  selected <- reactiveVal(rep(TRUE, nrow(data)))
-  observeEvent(input$plot_brush, {
-    selected(brushedPoints(data, input$plot_brush, allRows = TRUE)$selected_)
-  #observeEvent(input$plot_brush, {brushed_points <- brushedPoints(data, input$plot_brush, xvar = "lng", yvar = "lat")selected(brushed_points$selected_)
-  })
+filter_df <- function(df) {
+  filter(df,selected) |>
+    select(rank, year, location, country, restaurant)}
   
-  output$map <- renderPlot(scatterplot(data, selected()))
-  output$table <- renderDT(filter_df(data, selected()))
-}
-
+  
+ui <- fluidPage(
+   titlePanel("Worlds Best Restaurants"),
+   numericInput("rank", "Enter the rank between 1 to 50)", 1),
+   sliderInput("year", "Year", min = min(data$year), max = max(data$year), c(2002, 2023), sep = ""),
+   plotlyOutput("scatter"),
+   DTOutput("dt")
+ )
+server <- function(input, output) {
+   data_subset <- reactive({
+     data %>%
+       mutate(selected = (
+         (rank %in% input$rank) &
+         (year >= input$year[1]) &
+         (year <= input$year[2])
+       ))
+   })
+   output$scatter <- renderPlotly({
+     scatterplot(data_subset())
+   })
+   output$dt <- renderDT(filter_df(data_subset()))
+ }
+ 
 shinyApp(ui, server)
 
 
