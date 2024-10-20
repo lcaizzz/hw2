@@ -40,7 +40,7 @@ filter_df <- function(df) {
   
   
 ui <- fluidPage(
-   titlePanel("Worlds Best Restaurants"),
+   titlePanel("Where are Worlds' Best Restaurants?"),
    numericInput("rank", "Enter the rank between 1 to 50", 1),
    sliderInput("year", "Year", min = min(data$year), max = max(data$year), c(2002, 2023), sep = ""),
    plotlyOutput("scatter"),
